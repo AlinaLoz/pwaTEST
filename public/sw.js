@@ -1,20 +1,32 @@
+const STATIC_CACHE = 'STATIC_CACHE';
+const DYNAMIC_CACHE = 'DYNAMIC_CACHE';
 
 self.addEventListener('install', (event) => {
 	console.log('[Service Worker] installed....', event);
 	event.waitUntil(
-		caches.open('testcash')
+		caches.open(STATIC_CACHE)
 			.then((cache) => {
 				console.log('[Service Worker] precaching app shell');
-				cache.add('/');
-				cache.add('/index.html');
-				cache.add('/js/app.js');
+				cache.addAll([
+					'/',
+					'/index.html',
+					'/js/app.js',
+					'/static/css/main.5f361e03.chunk.css'
+				]);
 			})
 	);
-	caches.open()
 });
 
-self.addEventListener('activate', (event) => {
-	console.log('[Service Worker] activated....', event);
+self.addEventListener('activate', async (event) => {
+	console.log('[Service Worker] activated.... 1', event);
+	const keys = await caches.keys();
+	await Promise.all(
+		keys.map((cacheName) => {
+			if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+				return caches.delete(cacheName);
+			}
+		})
+	);
 	return self.clients.claim();
 });
 
@@ -24,11 +36,18 @@ self.addEventListener('fetch', (event) => {
 		caches.match(event.request)
 			.then((response) => {
 				console.log('response', response);
-				
 				if (response) {
 					return response
 				} else {
-					return fetch(event.request);
+					return fetch(event.request)
+						.then((resp) => {
+							return caches.open(DYNAMIC_CACHE)
+							.then((cache) => {
+								cache.put(event.request.url, resp.clone());	
+								return resp;				
+							});
+
+						}).catch((err) => console.log('err', err));
 				}
 			})
 	);

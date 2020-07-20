@@ -29,8 +29,8 @@ function App() {
           <Link to={'/component2'}>component2</Link>
         </nav>
         <Switch>
-          <Route exact path='/component1' component={Component1}/>
-          <Route exact path='/component2' component={Component2}/>
+          <Route path='/component1' component={Component1}/>
+          <Route path='/component2' component={Component2}/>
         </Switch>
       </header>
     </div>
